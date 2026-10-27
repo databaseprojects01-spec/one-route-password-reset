@@ -12,6 +12,8 @@
     label, input, button { display: block; box-sizing: border-box; width: 100%; }
     label { margin-top: 15px; color: #c9c3d4; font-size: .9rem; }
     input { margin-top: 6px; padding: 11px; border: 1px solid #514769; border-radius: 6px; background: #090e21; color: white; }
+    .show-password { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+    .show-password input { width: auto; margin: 0; padding: 0; }
     button { margin-top: 22px; padding: 11px; border: 0; border-radius: 6px; background: #ff873b; color: #21130d; font-weight: 700; cursor: pointer; }
     #message { min-height: 24px; color: #ffb576; } .success { color: #77d79a !important; }
   </style>
@@ -23,6 +25,7 @@
     <form id="form" hidden>
       <label>New password<input id="password" type="password" minlength="12" required autocomplete="new-password"></label>
       <label>Confirm password<input id="confirm" type="password" minlength="12" required autocomplete="new-password"></label>
+      <label class="show-password"><input id="show-password" type="checkbox">Show password</label>
       <button type="submit">Update password</button>
     </form>
   </main>
@@ -31,6 +34,8 @@
     const config = window.ONE_ROUTE_SUPABASE;
     const message = document.querySelector('#message');
     const form = document.querySelector('#form');
+    const showPassword = document.querySelector('#show-password');
+    const passwordFields = [document.querySelector('#password'), document.querySelector('#confirm')];
     const params = new URLSearchParams(window.location.hash.slice(1));
     const token = params.get('access_token');
     const redirectError = params.get('error_description');
@@ -45,6 +50,12 @@
       message.textContent = 'Choose a new password.';
       form.hidden = false;
     }
+
+    showPassword.addEventListener('change', () => {
+      passwordFields.forEach(field => {
+        field.type = showPassword.checked ? 'text' : 'password';
+      });
+    });
 
     form.addEventListener('submit', async event => {
       event.preventDefault();
