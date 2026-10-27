@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reset your One Route password</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { min-height: 100vh; display: grid; place-items: center; margin: 0; background: #090e21; color: #eee6f6; }
+    main { width: min(390px, calc(100% - 40px)); padding: 30px; border: 1px solid #514769; border-radius: 14px; background: #120e24; }
+    h1 { margin-top: 0; font-size: 1.6rem; }
+    label, input, button { display: block; box-sizing: border-box; width: 100%; }
+    label { margin-top: 15px; color: #c9c3d4; font-size: .9rem; }
+    input { margin-top: 6px; padding: 11px; border: 1px solid #514769; border-radius: 6px; background: #090e21; color: white; }
+    button { margin-top: 22px; padding: 11px; border: 0; border-radius: 6px; background: #ff873b; color: #21130d; font-weight: 700; cursor: pointer; }
+    #message { min-height: 24px; color: #ffb576; } .success { color: #77d79a !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Reset password</h1>
+    <p id="message">Verifying your reset link…</p>
+    <form id="form" hidden>
+      <label>New password<input id="password" type="password" minlength="12" required autocomplete="new-password"></label>
+      <label>Confirm password<input id="confirm" type="password" minlength="12" required autocomplete="new-password"></label>
+      <button type="submit">Update password</button>
+    </form>
+  </main>
+  <script src="config.js"></script>
+  <script>
+    const config = window.ONE_ROUTE_SUPABASE;
+    const message = document.querySelector('#message');
+    const form = document.querySelector('#form');
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const token = params.get('access_token');
+    const redirectError = params.get('error_description');
+
+    if (!config || !config.url || !config.anonKey) {
+      message.textContent = 'This password-reset page has not been configured.';
+    } else if (!token) {
+      message.textContent = redirectError
+        ? decodeURIComponent(redirectError.replace(/\+/g, ' '))
+        : 'This reset link is invalid or has expired.';
+    } else {
+      message.textContent = 'Choose a new password.';
+      form.hidden = false;
+    }
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const password = document.querySelector('#password').value;
+      const confirm = document.querySelector('#confirm').value;
+      if (password !== confirm) return void (message.textContent = 'Passwords do not match.');
+      if (password.length < 12) return void (message.textContent = 'Use at least 12 characters.');
+      message.textContent = 'Updating password…';
+      try {
+        const response = await fetch(`${config.url}/auth/v1/user`, {
+          method: 'PUT',
+          headers: {
+            apikey: config.anonKey,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ password })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || data.msg || 'Could not update password.');
+        form.hidden = true;
+        message.textContent = 'Password updated. Return to One Route and sign in.';
+        message.className = 'success';
+      } catch (error) {
+        message.textContent = error.message || 'Could not update password.';
+      }
+    });
+  </script>
+</body>
+</html>
